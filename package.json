@@ -6,14 +6,27 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx ./src/index.ts",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:generate": "npx prisma generate",
+    "db:push": "npx prisma db push",
+    "db:up": "docker compose up -d && bash ./scripts/create_vector_extension.sh",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.4.5",
+    "@types/prompt-sync": "^4.2.0",
     "tsx": "^3.12.7",
     "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "@prisma/client": "5.1.0",
+    "glob": "^10.3.3",
+    "langchain": "^0.0.120",
+    "prisma": "^5.1.0",
+    "prompt-sync": "^4.2.0"
   }
 }
