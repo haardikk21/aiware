@@ -25,7 +25,7 @@ async function main() {
     doDirtyWork(metadata);
   }, CHECK_STATUS_INTERVAL);
 
-  await runQALoop();
+  await runQALoop(metadata);
 }
 
 function getRepoPath() {
