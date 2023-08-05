@@ -101,7 +101,8 @@ function getChatVectorChain(onNewToken: (token: string) => void) {
 
   const llm = new ChatOpenAI({
     temperature: 0,
-    modelName: "gpt-4",
+    // modelName: "gpt-4",
+    modelName: "gpt-3.5-turbo-16k",
     maxTokens: -1,
     streaming: true,
     callbackManager: CallbackManager.fromHandlers({

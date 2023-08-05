@@ -34,13 +34,15 @@ export async function embedCodebase(
 
   const files = await glob("**/*", {
     ignore: [
-      "node_modules",
-      "node_modules/**",
+      // "node_modules",
+      // "node_modules/**",
       ".git",
       ".git/**",
       "pnpm-lock.yaml",
       ".env",
       ".env.*",
+      "dist",
+      "dist/**",
       ...ignoredExtensions,
     ],
     cwd: m.repoPath,
@@ -151,20 +153,24 @@ function getDocumentsForFilepaths(
 ) {
   const docs: Document[] = [];
   for (const exactFilePath of exactFilePaths) {
-    const pageContent = readFileSync(exactFilePath).toString();
+    try {
+      const pageContent = readFileSync(exactFilePath).toString();
 
-    if (pageContent.length <= 0 || typeof pageContent !== "string") continue;
+      if (pageContent.length <= 0 || typeof pageContent !== "string") continue;
 
-    const doc = new Document({
-      pageContent,
-      metadata: {
-        filePath: exactFilePath,
-        commitHash: currentCommitHash,
-        repoPath: m.repoPath,
-      },
-    });
+      const doc = new Document({
+        pageContent,
+        metadata: {
+          filePath: exactFilePath,
+          commitHash: currentCommitHash,
+          repoPath: m.repoPath,
+        },
+      });
 
-    docs.push(doc);
+      docs.push(doc);
+    } catch {
+      console.log("SKIPPING: ",exactFilePath); //MBH
+    }
   }
 
   return docs;
