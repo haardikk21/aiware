@@ -1,0 +1,7 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"features": {
+		"ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {}
+	},
+	"postStartCommand": "sh ../scripts/create_vector_extension.sh"
+}
