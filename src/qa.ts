@@ -7,6 +7,7 @@ import { PrismaVectorStore } from "langchain/vectorstores/prisma";
 import readline from "readline";
 import { CallbackManager } from "langchain/callbacks";
 import { BufferWindowMemory, ChatMessageHistory } from "langchain/memory";
+import { Metadata } from "./types";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -45,7 +46,7 @@ const memory = new BufferWindowMemory({
   inputKey: "question",
 });
 
-export async function runQALoop() {
+export async function runQALoop(m: Metadata) {
   for (;;) {
     const question = await new Promise<string>((resolve) => {
       rl.question('Ask a question (type "exit" to stop): ', (answer) => {
@@ -65,25 +66,26 @@ export async function runQALoop() {
       process.stdout.write(token);
     };
 
-    await askQuestion(sanitizedQuestion, onNewToken);
-    await runQALoop();
+    await askQuestion(sanitizedQuestion, onNewToken, m);
+    await runQALoop(m);
   }
 }
 
 export async function askQuestion(
   question: string,
-  onNewToken: (token: string) => void
+  onNewToken: (token: string) => void,
+  m: Metadata
 ) {
   const sanitizedQuestion = question.trim().replace("\n", " ");
 
-  const chain = getChatVectorChain(onNewToken);
+  const chain = getChatVectorChain(onNewToken, m);
   await chain.call({
     question: sanitizedQuestion,
     chat_history: chatHistory,
   });
 }
 
-function getChatVectorChain(onNewToken: (token: string) => void) {
+function getChatVectorChain(onNewToken: (token: string) => void, m: Metadata) {
   const db = new PrismaClient();
   const embeddings = new OpenAIEmbeddings({
     modelName: "text-embedding-ada-002",
@@ -96,6 +98,11 @@ function getChatVectorChain(onNewToken: (token: string) => void) {
     columns: {
       id: PrismaVectorStore.IdColumn,
       content: PrismaVectorStore.ContentColumn,
+    },
+    filter: {
+      repoPath: {
+        equals: m.repoPath,
+      },
     },
   });
 
