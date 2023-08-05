@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { Metadata } from "./types";
-import { PrismaClient } from "@prisma/client";
+import { deleteOldEmbeddingsForDirtyFiles } from "./providers/prismaVec";
 import { embedCodebase } from "./embed";
 import { updateMetadataWithLatestCommitHash } from "./metadata";
 
@@ -23,23 +23,6 @@ export async function doDirtyWork(m: Metadata) {
   updateMetadataWithLatestCommitHash(m, latestCommitHash);
 }
 
-async function deleteOldEmbeddingsForDirtyFiles(
-  filePaths: string[],
-  m: Metadata
-) {
-  const prisma = new PrismaClient();
-
-  const { count } = await prisma.document.deleteMany({
-    where: {
-      filePath: {
-        in: filePaths,
-      },
-      commitHash: m.lastKnownCommitHash,
-    },
-  });
-
-  console.log(`Deleted ${count} old embeddings`);
-}
 
 export function findDirtyFiles(m: Metadata) {
   // Find what files have changed since lastKnownCommitHash

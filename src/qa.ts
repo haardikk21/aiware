@@ -1,9 +1,8 @@
-import { Prisma, PrismaClient } from "@prisma/client";
 import { PromptTemplate } from "langchain/prompts";
 import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { createVectorStore } from "./providers/prismaVec";
 import readline from "readline";
 import { CallbackManager } from "langchain/callbacks";
 import { BufferWindowMemory, ChatMessageHistory } from "langchain/memory";
@@ -84,20 +83,10 @@ export async function askQuestion(
 }
 
 function getChatVectorChain(onNewToken: (token: string) => void) {
-  const db = new PrismaClient();
   const embeddings = new OpenAIEmbeddings({
     modelName: "text-embedding-ada-002",
   });
-  const vectorStore = new PrismaVectorStore(embeddings, {
-    db,
-    prisma: Prisma,
-    tableName: "Document",
-    vectorColumnName: "vector",
-    columns: {
-      id: PrismaVectorStore.IdColumn,
-      content: PrismaVectorStore.ContentColumn,
-    },
-  });
+  const vectorStore = createVectorStore(embeddings);
 
   const llm = new ChatOpenAI({
     temperature: 0,

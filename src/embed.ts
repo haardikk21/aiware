@@ -1,12 +1,9 @@
 import { Document } from "langchain/document";
-import { Document as DBDocument, Prisma } from "@prisma/client";
 import { Metadata } from "./types";
 import { glob } from "glob";
 import { readFileSync } from "fs";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { PrismaClient } from "@prisma/client";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { addDocsToVectorstore } from "./providers/prismaVec";
 
 export async function embedCodebase(
   m: Metadata,
@@ -71,43 +68,6 @@ export async function embedCodebase(
   await addDocsToVectorstore(splitDocs);
 }
 
-async function addDocsToVectorstore(splitDocs: Document[]) {
-  const db = new PrismaClient();
-  const embeddings = new OpenAIEmbeddings({
-    modelName: "text-embedding-ada-002",
-  });
-  const vectorStore = PrismaVectorStore.withModel<DBDocument>(db).create(
-    embeddings,
-    {
-      prisma: Prisma,
-      tableName: "Document",
-      vectorColumnName: "vector",
-      columns: {
-        id: PrismaVectorStore.IdColumn,
-        content: PrismaVectorStore.ContentColumn,
-      },
-    }
-  );
-
-  console.time(`Creating embeddings`);
-
-  await vectorStore.addModels(
-    await db.$transaction(
-      splitDocs.map((doc) =>
-        db.document.create({
-          data: {
-            content: doc.pageContent,
-            repoPath: doc.metadata.repoPath,
-            filePath: doc.metadata.filePath,
-            commitHash: doc.metadata.commitHash,
-          },
-        })
-      )
-    )
-  );
-
-  console.timeEnd(`Creating embeddings`);
-}
 
 async function splitDocuments(docs: Document[]) {
   const splitDocs: Document[] = [];

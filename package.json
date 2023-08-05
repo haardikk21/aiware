@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@prisma/client": "5.1.0",
+    "faiss-node": "^0.2.2",
     "glob": "^10.3.3",
     "langchain": "^0.0.120",
     "prisma": "^5.1.0",
