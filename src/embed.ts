@@ -7,6 +7,8 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { PrismaClient } from "@prisma/client";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { parse } from "parse-gitignore";
+import { join } from "path";
 
 export async function embedCodebase(
   m: Metadata,
@@ -32,6 +34,8 @@ export async function embedCodebase(
     "toml",
   ].map((e) => `**/*.${e}`);
 
+  const gitignore = parse(join(m.repoPath, ".gitignore")).patterns;
+
   const files = await glob("**/*", {
     ignore: [
       "node_modules",
@@ -41,6 +45,7 @@ export async function embedCodebase(
       "pnpm-lock.yaml",
       ".env",
       ".env.*",
+      ...gitignore,
       ...ignoredExtensions,
     ],
     cwd: m.repoPath,
