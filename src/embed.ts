@@ -156,7 +156,9 @@ function getDocumentsForFilepaths(
 ) {
   const docs: Document[] = [];
   for (const exactFilePath of exactFilePaths) {
-    const pageContent = readFileSync(exactFilePath).toString();
+    let pageContent = readFileSync(exactFilePath).toString();
+
+    pageContent = pageContent.replaceAll("\u0000", "");
 
     if (pageContent.length <= 0 || typeof pageContent !== "string") continue;
 
