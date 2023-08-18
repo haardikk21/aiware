@@ -6,6 +6,11 @@ import { createVectorStore } from "./providers/prismaVec";
 import readline from "readline";
 import { CallbackManager } from "langchain/callbacks";
 import { BufferWindowMemory, ChatMessageHistory } from "langchain/memory";
+import { appendFile } from "fs";
+import { doDirtyWork } from "./dirtyWork";
+
+// temp way to put responses in a file because I'm having an issue with copying from the terminal
+const log = (token) => appendFile("./chatLog.txt", token,()=>{});
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -44,28 +49,39 @@ const memory = new BufferWindowMemory({
   inputKey: "question",
 });
 
-export async function runQALoop() {
+export async function runQALoop(metadata) {
   for (;;) {
+    let skipEval = false;
     const question = await new Promise<string>((resolve) => {
       rl.question('Ask a question (type "exit" to stop): ', (answer) => {
         resolve(answer);
       });
     });
 
+    if (question.toLowerCase() === "update") {
+      await doDirtyWork(metadata, true);
+      skipEval = true;
+    }
+
     if (question.toLowerCase() === "exit") {
       rl.close();
       break;
     }
 
-    const sanitizedQuestion = question.trim().replace("\n", " ");
+    if(skipEval) {
+      console.log(`Command ${question} completed`);
+    } else {
+      const sanitizedQuestion = question.trim().replace("\n", " ");
 
-    console.log("You asked: ", sanitizedQuestion);
-    const onNewToken = (token: string) => {
-      process.stdout.write(token);
-    };
-
-    await askQuestion(sanitizedQuestion, onNewToken);
-    await runQALoop();
+      console.log("You asked: ", sanitizedQuestion);
+      const onNewToken = (token: string) => {
+        process.stdout.write(token);
+        log(token);
+      };
+  
+      await askQuestion(sanitizedQuestion, onNewToken);
+      await runQALoop(metadata);  
+    }
   }
 }
 
