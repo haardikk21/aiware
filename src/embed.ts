@@ -23,10 +23,12 @@ export async function embedCodebase(
     "webmanifest",
     "png",
     "ico",
+    "gif",
     "xml",
     "woff2",
     "riv",
     "toml",
+    "txt"
   ].map((e) => `**/*.${e}`);
 
   const files = await glob("**/*", {
@@ -40,6 +42,8 @@ export async function embedCodebase(
       ".env.*",
       "dist",
       "dist/**",
+      "**/bin",
+      "**/bin/**",
       ...ignoredExtensions,
     ],
     cwd: m.repoPath,
@@ -106,6 +110,15 @@ function getFileSplitterForExtension(fileExtension: string) {
   }
 }
 
+function hasNullBytes(buffer: Buffer): boolean {
+  for (let i = 0; i < buffer.length; i++) {
+    if (buffer[i] === 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function getDocumentsForFilepaths(
   m: Metadata,
   exactFilePaths: string[],
@@ -114,9 +127,13 @@ function getDocumentsForFilepaths(
   const docs: Document[] = [];
   for (const exactFilePath of exactFilePaths) {
     try {
-      const pageContent = readFileSync(exactFilePath).toString();
+      const buffer = readFileSync(exactFilePath);
+      const pageContent = buffer.toString();
 
-      if (pageContent.length <= 0 || typeof pageContent !== "string") continue;
+      if (pageContent.length <= 0 || typeof pageContent !== "string" || hasNullBytes(buffer)) {
+        console.log(`SKIPPING DUE TO INVALID CONTENT: ${exactFilePath}`);
+        continue;
+      }
 
       const doc = new Document({
         pageContent,
