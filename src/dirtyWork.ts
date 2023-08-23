@@ -1,6 +1,6 @@
 import { execSync } from "child_process";
 import { Metadata } from "./types";
-import { deleteOldEmbeddingsForDirtyFiles } from "./providers/prismaVec";
+import { deleteOldEmbeddingsForDirtyFiles } from "./providers/sqliteVec";
 import { embedCodebase } from "./embed";
 import { updateMetadataWithLatestCommitHash } from "./metadata";
 

@@ -3,7 +3,7 @@ import { Metadata } from "./types";
 import { glob } from "glob";
 import { readFileSync } from "fs";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { addDocsToVectorstore } from "./providers/prismaVec";
+import { addDocsToVectorstore } from "./providers/sqliteVec";
 
 export async function embedCodebase(
   m: Metadata,
