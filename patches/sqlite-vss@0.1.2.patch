@@ -1,0 +1,40 @@
+diff --git a/src/index.js b/src/index.js
+index 5c6b2f39fdbd05ca4b5e9e2bf6e66c9bf71489b6..abbac25d2a1c0578656659f213f5121118bf1c80 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -47,7 +47,11 @@ function loadablePathResolver(name) {
+     );
+   }
+ 
+-  return loadablePath;
++  // hack - avoid error loading vss0.so.so
++  const hacked = loadablePath.replace(".so","");
++  // console.log({loadablePath,hacked});
++  
++  return hacked;
+ }
+ 
+ export function getVectorLoadablePath() {
+@@ -59,10 +63,20 @@ export function getVssLoadablePath() {
+ }
+ 
+ export function loadVector(db) {
+-  db.loadExtension(getVectorLoadablePath());
++  // EXPAND FOR DEBUGGING
++  // db.loadExtension(getVectorLoadablePath());
++  const path = getVectorLoadablePath();
++  // console.log(`LOADING EXTENSION FROM: ${path}`);
++  db.loadExtension(path);
++  // console.log(`LOADED EXTENSION FROM: ${path}`);
+ }
+ export function loadVss(db) {
+-  db.loadExtension(getVssLoadablePath());
++  // EXPAND FOR DEBUGGING
++  // db.loadExtension(getVssLoadablePath());
++  const path = getVssLoadablePath();
++  // console.log(`LOADING EXTENSION FROM: ${path}`);
++  db.loadExtension(path);
++  // console.log(`LOADED EXTENSION FROM: ${path}`);
+ }
+ export function load(db) {
+   loadVector(db);

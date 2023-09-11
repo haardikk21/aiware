@@ -29,7 +29,11 @@
     "langchain": "^0.0.120",
     "prisma": "^5.1.0",
     "prompt-sync": "^4.2.0",
-    "sqlite-vss": "^0.1.2",
-    "sqlite3": "^5.1.6"
+    "sqlite-vss": "^0.1.2"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "sqlite-vss@0.1.2": "patches/sqlite-vss@0.1.2.patch"
+    }
   }
 }
