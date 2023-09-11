@@ -24,7 +24,8 @@
 			"version": "latest"
 		}
 	},
-	"postStartCommand": "rm -rf /workspaces/.codespaces/shared/editors/jetbrains"
+	
+	"postStartCommand": "sh ./.devcontainer/postStart.sh"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
