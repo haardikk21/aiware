@@ -65,17 +65,25 @@ class SqliteVectorStore extends VectorStore {
     // Generate embeddings for the new documents
     const vectors = await embeddings.embedDocuments(docs.map(doc=>doc.pageContent));
 
-    // Load the new embeddings into the database
-    for (let idx = 0; idx < docs.length; idx++) {
-      const vector = JSON.stringify(vectors[idx]);
-      const stmt = `INSERT INTO vss_docs ( rowid, vector ) VALUES ( ${idx}, '${vector}' );`;
-      log('LOAD DOCUMENT', stmt.slice(45,70));
-      const vectorInsert = this.db.prepare(stmt);
-      const result = vectorInsert.run();
-      const id = result.lastInsertRowid;
-      const documentInsert = this.db.prepare("INSERT INTO docs ( id, document ) VALUES (?, ?);");
-      documentInsert.run(id, JSON.stringify(docs[idx]));
-    }
+    const insertAll = db.transaction((vectors, docs) => {
+      // Find max rowid
+      const maxIdSelect = this.db.prepare("SELECT rowid FROM vss_docs ORDER BY rowid DESC LIMIT 1;");
+      const maxId = maxIdSelect.get().rowid;
+
+      // Load the new embeddings into the database
+      for (let idx = 0; idx < docs.length; idx++) {
+        const insertIndex = maxId+idx+1;
+        const vector = JSON.stringify(vectors[idx]);
+        const stmt = `INSERT INTO vss_docs ( rowid, vector ) VALUES ( ${insertIndex}, '${vector}' );`;
+        log('LOAD DOCUMENT', stmt.slice(45,70));
+        const vectorInsert = this.db.prepare(stmt);
+        const result = vectorInsert.run();
+        const id = result.lastInsertRowid;
+        const documentInsert = this.db.prepare("INSERT INTO docs ( id, document ) VALUES (?, ?);");
+        documentInsert.run(id, JSON.stringify(docs[idx]));
+      }
+    });
+    insertAll(vectors, docs);
   }
 
   public addVectors(vectors: number[][], documents: Document<Record<string, any>>[], options?: { [x: string]: any; }): Promise<void | string[]> {
