@@ -18,6 +18,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^20.4.5",
+    "@types/parse-gitignore": "^1.0.0",
     "@types/prompt-sync": "^4.2.0",
     "tsx": "^3.12.7",
     "typescript": "^5.1.6"
@@ -27,6 +28,7 @@
     "faiss-node": "^0.2.2",
     "glob": "^10.3.3",
     "langchain": "^0.0.120",
+    "parse-gitignore": "^2.0.0",
     "prisma": "^5.1.0",
     "prompt-sync": "^4.2.0"
   }

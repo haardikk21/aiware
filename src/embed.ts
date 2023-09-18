@@ -4,6 +4,8 @@ import { glob } from "glob";
 import { readFileSync } from "fs";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { addDocsToVectorstore } from "./providers/prismaVec";
+import { parse } from "parse-gitignore";
+import { join } from "path";
 
 export async function embedCodebase(
   m: Metadata,
@@ -31,6 +33,8 @@ export async function embedCodebase(
     "txt"
   ].map((e) => `**/*.${e}`);
 
+  const gitignore = parse(join(m.repoPath, ".gitignore")).patterns;
+
   const files = await glob("**/*", {
     ignore: [
       // "node_modules",
@@ -44,6 +48,7 @@ export async function embedCodebase(
       "dist/**",
       "**/bin",
       "**/bin/**",
+      ...gitignore,
       ...ignoredExtensions,
     ],
     cwd: m.repoPath,
@@ -127,8 +132,10 @@ function getDocumentsForFilepaths(
   const docs: Document[] = [];
   for (const exactFilePath of exactFilePaths) {
     try {
-      const buffer = readFileSync(exactFilePath);
+      let buffer = readFileSync(exactFilePath);
       const pageContent = buffer.toString();
+
+      pageContent = pageContent.replaceAll("\u0000", "");
 
       if (pageContent.length <= 0 || typeof pageContent !== "string" || hasNullBytes(buffer)) {
         console.log(`SKIPPING DUE TO INVALID CONTENT: ${exactFilePath}`);
