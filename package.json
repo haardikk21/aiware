@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx ./src/index.ts",
+    "dev": "npx dotenv-cli -- tsx ./src/index.ts",
     "start": "node dist/index.js",
     "db:generate": "npx prisma generate",
     "db:push": "npx prisma db push",
@@ -25,11 +25,17 @@
   },
   "dependencies": {
     "@prisma/client": "5.1.0",
-    "faiss-node": "^0.2.2",
+    "better-sqlite3": "^8.5.1",
     "glob": "^10.3.3",
     "langchain": "^0.0.120",
     "parse-gitignore": "^2.0.0",
     "prisma": "^5.1.0",
-    "prompt-sync": "^4.2.0"
+    "prompt-sync": "^4.2.0",
+    "sqlite-vss": "^0.1.2"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "sqlite-vss@0.1.2": "patches/sqlite-vss@0.1.2.patch"
+    }
   }
 }

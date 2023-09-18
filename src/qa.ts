@@ -2,7 +2,7 @@ import { PromptTemplate } from "langchain/prompts";
 import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { createVectorStore } from "./providers/prismaVec";
+import { createVectorStore } from "./providers/sqliteVec";
 import readline from "readline";
 import { CallbackManager } from "langchain/callbacks";
 import { BufferWindowMemory, ChatMessageHistory } from "langchain/memory";
