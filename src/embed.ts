@@ -133,7 +133,7 @@ function getDocumentsForFilepaths(
   for (const exactFilePath of exactFilePaths) {
     try {
       let buffer = readFileSync(exactFilePath);
-      const pageContent = buffer.toString();
+      let pageContent = buffer.toString();
 
       pageContent = pageContent.replaceAll("\u0000", "");
 
