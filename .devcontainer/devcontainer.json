@@ -16,16 +16,16 @@
 			"nodeGypDependencies": true,
 			"version": "lts"
 		},
-		"ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {
-			"version": "latest"
-		},
+		// "ghcr.io/devcontainers-contrib/features/postgres-asdf:1": {
+		// 	"version": "latest"
+		// },
 		"ghcr.io/warrenbuckley/codespace-features/sqlite:1": {},
 		"ghcr.io/devcontainers-community/npm-features/typescript:1": {
 			"version": "latest"
 		}
 	},
 	
-	"postStartCommand": "sh ./.devcontainer/postStart.sh"
+	"postStartCommand": "/bin/bash ./.devcontainer/postStart.sh"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
