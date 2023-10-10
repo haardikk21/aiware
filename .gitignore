@@ -1,5 +1,7 @@
 node_modules
+.pnpm-store
 .env
 dist/
 db/
+sqliteVecData.db
 metadatas.json
