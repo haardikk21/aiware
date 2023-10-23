@@ -68,7 +68,7 @@ class SqliteVectorStore extends VectorStore {
     const insertAll = db.transaction((vectors, docs) => {
       // Find max rowid
       const maxIdSelect = this.db.prepare("SELECT rowid FROM vss_docs ORDER BY rowid DESC LIMIT 1;");
-      const maxId = maxIdSelect.get().rowid;
+      const maxId = maxIdSelect.get()?.rowid || 0;
 
       // Load the new embeddings into the database
       for (let idx = 0; idx < docs.length; idx++) {
