@@ -127,10 +127,11 @@ class SqliteVectorStore extends VectorStore {
     return docs;
   }
 
-  public async deleteMatching(metadata: Metadata): Promise<number>{
+  public async deleteMatching(metadata: Metadata, filePaths: string[]=[]): Promise<number>{
     const {repoPath, lastKnownCommitHash} = metadata;
-    const documentIdsSelect = this.db.prepare("SELECT id FROM docs WHERE json_extract(document, '$.metadata.repoPath') = ? AND json_extract(document, '$.metadata.commitHash') = ?;");
-    const matching = documentIdsSelect.all(repoPath, lastKnownCommitHash);
+//    const documentIdsSelect = this.db.prepare("SELECT id FROM docs WHERE json_extract(document, '$.metadata.repoPath') = ? AND json_extract(document, '$.metadata.commitHash') = ?;");
+    const documentIdsSelect = this.db.prepare("SELECT id FROM docs WHERE json_extract(document, '$.metadata.repoPath') = ? AND json_extract(document, '$.metadata.commitHash') = ? AND json_extract(document, '$.metadata.filePath') IN (?)");
+    const matching = documentIdsSelect.all(repoPath, lastKnownCommitHash, filePaths);
     const ids = matching.map(item=>item.id);
     const vectorDelete = this.db.prepare("DELETE FROM vss_docs WHERE rowid = ?;");
     const documentDelete = this.db.prepare("DELETE FROM docs WHERE id = ?;");
@@ -213,7 +214,7 @@ export async function deleteOldEmbeddingsForDirtyFiles(
       return;
     }
 
-    const count = await vectorStore.deleteMatching(m);
+    const count = await vectorStore.deleteMatching(m, filePaths);
 
     await vectorStore.save(sqliteVecData);
 
