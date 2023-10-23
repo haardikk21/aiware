@@ -60,7 +60,7 @@ export async function runQALoop(m: Metadata) {
     });
 
     if (question.toLowerCase() === "update") {
-      await doDirtyWork(metadata, true);
+      await doDirtyWork(m, true);
       skipEval = true;
     }
 
