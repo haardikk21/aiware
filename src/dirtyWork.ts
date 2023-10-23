@@ -1,18 +1,18 @@
 import { execSync } from "child_process";
 import { Metadata } from "./types";
-import { PrismaClient } from "@prisma/client";
+import { deleteOldEmbeddingsForDirtyFiles } from "./providers/sqliteVec";
 import { embedCodebase } from "./embed";
 import { updateMetadataWithLatestCommitHash } from "./metadata";
 
-export async function doDirtyWork(m: Metadata) {
+export async function doDirtyWork(m: Metadata, force: boolean = false) {
   const { latestCommitHash, isDirty } = isRepoDirty(m);
-  if (!isDirty) {
+  if (!isDirty && !force) {
     return;
   }
 
   console.log(`Repo ${m.repoPath} is dirty. Finding changes...`);
 
-  const filePaths = findDirtyFiles(m);
+  const filePaths = !force?findDirtyFiles(m):findLocallyModifiedFiles(m);
   const exactFilePaths = filePaths.map((f) => `${m.repoPath}/${f}`);
 
   console.log(`Found ${filePaths.length} dirty files`);
@@ -23,22 +23,25 @@ export async function doDirtyWork(m: Metadata) {
   updateMetadataWithLatestCommitHash(m, latestCommitHash);
 }
 
-async function deleteOldEmbeddingsForDirtyFiles(
-  filePaths: string[],
-  m: Metadata
-) {
-  const prisma = new PrismaClient();
+export function findLocallyModifiedFiles(m: Metadata) {
+  // Find what files have changed since last commit, including untracked files
+  // Return a list of files
 
-  const { count } = await prisma.document.deleteMany({
-    where: {
-      filePath: {
-        in: filePaths,
-      },
-      commitHash: m.lastKnownCommitHash,
-    },
-  });
+  // git status --porcelain
 
-  console.log(`Deleted ${count} old embeddings`);
+  const filePaths = execSync(
+    `git status --porcelain`,
+    {
+      cwd: m.repoPath,
+    }
+  )
+    .toString()
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => line.split(" ")[1]);
+
+  return filePaths;
 }
 
 export function findDirtyFiles(m: Metadata) {

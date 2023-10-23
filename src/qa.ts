@@ -1,13 +1,17 @@
-import { Prisma, PrismaClient } from "@prisma/client";
 import { PromptTemplate } from "langchain/prompts";
 import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { createVectorStore } from "./providers/sqliteVec";
 import readline from "readline";
 import { CallbackManager } from "langchain/callbacks";
 import { BufferWindowMemory, ChatMessageHistory } from "langchain/memory";
 import { Metadata } from "./types";
+import { appendFile } from "fs";
+import { doDirtyWork } from "./dirtyWork";
+
+// temp way to put responses in a file because I'm having an issue with copying from the terminal
+const log = (token) => appendFile("./chatLog.txt", token,()=>{});
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -48,26 +52,37 @@ const memory = new BufferWindowMemory({
 
 export async function runQALoop(m: Metadata) {
   for (;;) {
+    let skipEval = false;
     const question = await new Promise<string>((resolve) => {
       rl.question('Ask a question (type "exit" to stop): ', (answer) => {
         resolve(answer);
       });
     });
 
+    if (question.toLowerCase() === "update") {
+      await doDirtyWork(m, true);
+      skipEval = true;
+    }
+
     if (question.toLowerCase() === "exit") {
       rl.close();
       break;
     }
 
-    const sanitizedQuestion = question.trim().replace("\n", " ");
+    if(skipEval) {
+      console.log(`Command ${question} completed`);
+    } else {
+      const sanitizedQuestion = question.trim().replace("\n", " ");
 
-    console.log("You asked: ", sanitizedQuestion);
-    const onNewToken = (token: string) => {
-      process.stdout.write(token);
-    };
-
-    await askQuestion(sanitizedQuestion, onNewToken, m);
-    await runQALoop(m);
+      console.log("You asked: ", sanitizedQuestion);
+      const onNewToken = (token: string) => {
+        process.stdout.write(token);
+        log(token);
+      };
+  
+      await askQuestion(sanitizedQuestion, onNewToken, m);
+      await runQALoop(m);  
+    }
   }
 }
 
@@ -86,29 +101,15 @@ export async function askQuestion(
 }
 
 function getChatVectorChain(onNewToken: (token: string) => void, m: Metadata) {
-  const db = new PrismaClient();
   const embeddings = new OpenAIEmbeddings({
     modelName: "text-embedding-ada-002",
   });
-  const vectorStore = new PrismaVectorStore(embeddings, {
-    db,
-    prisma: Prisma,
-    tableName: "Document",
-    vectorColumnName: "vector",
-    columns: {
-      id: PrismaVectorStore.IdColumn,
-      content: PrismaVectorStore.ContentColumn,
-    },
-    filter: {
-      repoPath: {
-        equals: m.repoPath,
-      },
-    },
-  });
+  const vectorStore = createVectorStore(embeddings);
 
   const llm = new ChatOpenAI({
     temperature: 0,
-    modelName: "gpt-4",
+    // modelName: "gpt-4",
+    modelName: "gpt-3.5-turbo-16k",
     maxTokens: -1,
     streaming: true,
     callbackManager: CallbackManager.fromHandlers({

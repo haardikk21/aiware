@@ -1,12 +1,9 @@
 import { Document } from "langchain/document";
-import { Document as DBDocument, Prisma } from "@prisma/client";
 import { Metadata } from "./types";
 import { glob } from "glob";
 import { readFileSync } from "fs";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { PrismaClient } from "@prisma/client";
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
-import { PrismaVectorStore } from "langchain/vectorstores/prisma";
+import { addDocsToVectorstore } from "./providers/sqliteVec";
 import { parse } from "parse-gitignore";
 import { join } from "path";
 
@@ -28,23 +25,29 @@ export async function embedCodebase(
     "webmanifest",
     "png",
     "ico",
+    "gif",
     "xml",
     "woff2",
     "riv",
     "toml",
+    "txt"
   ].map((e) => `**/*.${e}`);
 
   const gitignore = parse(join(m.repoPath, ".gitignore")).patterns;
 
   const files = await glob("**/*", {
     ignore: [
-      "node_modules",
-      "node_modules/**",
+      // "node_modules",
+      // "node_modules/**",
       ".git",
       ".git/**",
       "pnpm-lock.yaml",
       ".env",
       ".env.*",
+      "dist",
+      "dist/**",
+      "**/bin",
+      "**/bin/**",
       ...gitignore,
       ...ignoredExtensions,
     ],
@@ -74,43 +77,6 @@ export async function embedCodebase(
   await addDocsToVectorstore(splitDocs);
 }
 
-async function addDocsToVectorstore(splitDocs: Document[]) {
-  const db = new PrismaClient();
-  const embeddings = new OpenAIEmbeddings({
-    modelName: "text-embedding-ada-002",
-  });
-  const vectorStore = PrismaVectorStore.withModel<DBDocument>(db).create(
-    embeddings,
-    {
-      prisma: Prisma,
-      tableName: "Document",
-      vectorColumnName: "vector",
-      columns: {
-        id: PrismaVectorStore.IdColumn,
-        content: PrismaVectorStore.ContentColumn,
-      },
-    }
-  );
-
-  console.time(`Creating embeddings`);
-
-  await vectorStore.addModels(
-    await db.$transaction(
-      splitDocs.map((doc) =>
-        db.document.create({
-          data: {
-            content: doc.pageContent,
-            repoPath: doc.metadata.repoPath,
-            filePath: doc.metadata.filePath,
-            commitHash: doc.metadata.commitHash,
-          },
-        })
-      )
-    )
-  );
-
-  console.timeEnd(`Creating embeddings`);
-}
 
 async function splitDocuments(docs: Document[]) {
   const splitDocs: Document[] = [];
@@ -149,6 +115,15 @@ function getFileSplitterForExtension(fileExtension: string) {
   }
 }
 
+function hasNullBytes(buffer: Buffer): boolean {
+  for (let i = 0; i < buffer.length; i++) {
+    if (buffer[i] === 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function getDocumentsForFilepaths(
   m: Metadata,
   exactFilePaths: string[],
@@ -156,22 +131,30 @@ function getDocumentsForFilepaths(
 ) {
   const docs: Document[] = [];
   for (const exactFilePath of exactFilePaths) {
-    let pageContent = readFileSync(exactFilePath).toString();
+    try {
+      let buffer = readFileSync(exactFilePath);
+      let pageContent = buffer.toString();
 
-    pageContent = pageContent.replaceAll("\u0000", "");
+      pageContent = pageContent.replaceAll("\u0000", "");
 
-    if (pageContent.length <= 0 || typeof pageContent !== "string") continue;
+      if (pageContent.length <= 0 || typeof pageContent !== "string" || hasNullBytes(buffer)) {
+        console.log(`SKIPPING DUE TO INVALID CONTENT: ${exactFilePath}`);
+        continue;
+      }
 
-    const doc = new Document({
-      pageContent,
-      metadata: {
-        filePath: exactFilePath,
-        commitHash: currentCommitHash,
-        repoPath: m.repoPath,
-      },
-    });
+      const doc = new Document({
+        pageContent,
+        metadata: {
+          filePath: exactFilePath,
+          commitHash: currentCommitHash,
+          repoPath: m.repoPath,
+        },
+      });
 
-    docs.push(doc);
+      docs.push(doc);
+    } catch {
+      console.log("SKIPPING: ",exactFilePath); //MBH
+    }
   }
 
   return docs;
